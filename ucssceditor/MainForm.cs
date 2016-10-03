@@ -1,23 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
-using System.Diagnostics;
-//using System.Windows.Shapes;
 
-namespace ucssceditor
+namespace UCSScEditor
 {
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
-        private Decoder m_vStorageObject;
+        // SC file we're dealing with.
+        private ScFile _scFile;
 
-        public Form1()
+        public MainForm()
         {
             InitializeComponent();
         }
@@ -30,7 +24,7 @@ namespace ucssceditor
             {
                 try
                 {
-                    LoadSC(dialog.FileName);  
+                    LoadSc(dialog.FileName);  
                 }
                 catch(Exception ex)
                 {
@@ -93,19 +87,22 @@ namespace ucssceditor
                 }
             }
         }
-
-        private void LoadSC(string fileName)
+        
+        // Creates a new instance of the Decoder object and loads the decompressed SC files.
+        private void LoadSc(string fileName)
         {
-            m_vStorageObject = new Decoder(fileName);
-            m_vStorageObject.Decode();
+            _scFile = new ScFile(fileName);
+            _scFile.Load();
 
             treeView1.Nodes.Clear();
+
             pictureBox1.Image = null;
             label1.Text = null;
+
             RefreshMenu();
-            treeView1.Populate(m_vStorageObject.GetExports());
+            treeView1.Populate(_scFile.GetExports());
             //treeView1.Populate(m_vStorageObject.GetShapes());
-            treeView1.Populate(m_vStorageObject.GetTextures());
+            treeView1.Populate(_scFile.GetTextures());
             //treeView1.Populate(m_vStorageObject.GetMovieClips());
         }
 
@@ -150,9 +147,9 @@ namespace ucssceditor
 
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            using (FileStream input = new FileStream(m_vStorageObject.GetFileName(), FileMode.Open, FileAccess.ReadWrite, FileShare.Read))
+            using (FileStream input = new FileStream(_scFile.GetFileName(), FileMode.Open, FileAccess.ReadWrite, FileShare.Read))
             {
-                m_vStorageObject.Save(input);
+                _scFile.Save(input);
             }
         }
 
@@ -186,7 +183,7 @@ namespace ucssceditor
                         {
                             ShapeChunk data = (ShapeChunk)treeView1.SelectedNode.Tag;
                             data.Replace(chunk);
-                            m_vStorageObject.AddChange(m_vStorageObject.GetTextures()[data.GetTextureId()]);
+                            _scFile.AddChange(_scFile.GetTextures()[data.GetTextureId()]);
                             Render();
                         }
                     }
@@ -205,8 +202,8 @@ namespace ucssceditor
                 if (treeView1.SelectedNode.Tag != null)
                 {
                     Texture data = new Texture((Texture)treeView1.SelectedNode.Tag);
-                    m_vStorageObject.AddTexture(data);
-                    m_vStorageObject.AddChange(data);
+                    _scFile.AddTexture(data);
+                    _scFile.AddChange(data);
                     treeView1.Populate(new List<ScObject>() { data });
                 }
             }
@@ -216,7 +213,7 @@ namespace ucssceditor
         {
             ReplaceTexture form = new ReplaceTexture();
             List<short> textureIds = new List<short>();
-            foreach (Texture texture in m_vStorageObject.GetTextures())
+            foreach (Texture texture in _scFile.GetTextures())
                 textureIds.Add(texture.GetTextureId());
             ((ComboBox)form.Controls["comboBox1"]).DataSource = textureIds;
             if(form.ShowDialog() == DialogResult.OK)
@@ -227,7 +224,7 @@ namespace ucssceditor
                     {
                         ShapeChunk data = (ShapeChunk)treeView1.SelectedNode.Tag;
                         data.SetTextureId(Convert.ToByte(((ComboBox)form.Controls["comboBox1"]).SelectedItem));
-                        m_vStorageObject.AddChange(data);
+                        _scFile.AddChange(data);
                         Render();
                     }
                 }
@@ -247,17 +244,17 @@ namespace ucssceditor
                     if (form.ShowDialog() == DialogResult.OK)
                     {
                         string result = ((TextBox)form.Controls["textBox1"]).Text;
-                        if(result != "" && m_vStorageObject.GetExports().FindIndex(exp => exp.GetName() == result) == -1 )
+                        if(result != "" && _scFile.GetExports().FindIndex(exp => exp.GetName() == result) == -1 )
                         {
                             MovieClip mv = new MovieClip((MovieClip)data.GetDataObject());
-                            m_vStorageObject.AddMovieClip(mv);
-                            m_vStorageObject.AddChange(mv);
-                            Export ex = new Export(m_vStorageObject);
+                            _scFile.AddMovieClip(mv);
+                            _scFile.AddChange(mv);
+                            Export ex = new Export(_scFile);
                             ex.SetId(mv.GetId());
                             ex.SetExportName(result);
                             ex.SetDataObject(mv);
-                            m_vStorageObject.AddExport(ex);
-                            m_vStorageObject.AddChange(ex);
+                            _scFile.AddExport(ex);
+                            _scFile.AddChange(ex);
                             treeView1.Populate(new List<ScObject>() { ex });
                         }
                         else

@@ -1,31 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Diagnostics;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Drawing;
 
-namespace ucssceditor
+namespace UCSScEditor
 {
-    class ScObject
+    public class ScObject
     {
+        #region Constructor
         public ScObject()
         {
-
+            // Space
         }
+        #endregion
 
-        public virtual Bitmap GetBitmap()
-        {
-            return null;
-        }
+        #region Fields & Properties
+        public virtual Bitmap Bitmap => null;
 
-        public virtual List<ScObject> GetChildren()
-        {
-            return new List<ScObject>();
-        }
+        public virtual List<ScObject> Children => new List<ScObject>();
+        #endregion
 
+        #region Methods
         public virtual int GetDataType()
         {
             return -1;
@@ -56,19 +50,17 @@ namespace ucssceditor
             return false;
         }
 
+        public virtual Bitmap Render(RenderingOptions options) => null;
+
         public virtual void ParseData(BinaryReader br)
         {
-
-        }
-
-        public virtual Bitmap Render(RenderingOptions options)
-        {
-            return null;
+            // Space
         }
 
         public virtual void Save(FileStream input)
         {
-
+            // Space
         }
+        #endregion
     }
 }

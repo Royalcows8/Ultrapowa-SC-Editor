@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using System.Windows.Forms;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Diagnostics;
 
-namespace ucssceditor
+namespace UCSScEditor
 {
     static class ExtensionMethods
     {
@@ -31,7 +24,7 @@ namespace ucssceditor
 
         public static void PopulateChildren(this TreeNode tn, ScObject sco)
         {
-            foreach (var child in sco.GetChildren())
+            foreach (var child in sco.Children)
             {
                 tn.Nodes.Add(child.GetId().ToString(), child.GetName());
                 tn.Nodes[child.GetId().ToString()].Tag = child;

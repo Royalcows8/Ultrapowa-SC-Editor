@@ -1,4 +1,4 @@
-﻿namespace ucssceditor
+﻿namespace UCSScEditor
 {
     partial class ReplaceTexture
     {

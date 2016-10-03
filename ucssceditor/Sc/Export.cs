@@ -5,29 +5,28 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.IO;
-using System.Drawing;
-//using System.Windows.Shapes;
-//using System.Windows.Media;
 
-namespace ucssceditor
+namespace UCSScEditor
 {
-    class Export : ScObject
+    public class Export : ScObject
     {
-        private short m_vExportId;
-        private string m_vExportName;
-        private MovieClip m_vDataObject;
-        private Decoder m_vStorageObject;
-
-        public Export(Decoder scs)
+        #region Constructors
+        public Export(ScFile scs)
         {
             m_vStorageObject = scs;
         }
+        #endregion
 
-        public override List<ScObject> GetChildren()
-        {
-            return m_vDataObject.GetChildren();
-        }
+        #region Fields & Properties
+        private short m_vExportId;
+        private string m_vExportName;
+        private MovieClip m_vDataObject;
+        private ScFile m_vStorageObject;
 
+        public override List<ScObject> Children => m_vDataObject.Children;
+        #endregion
+
+        #region Methods
         public ScObject GetDataObject()
         {
             return m_vDataObject;
@@ -62,7 +61,7 @@ namespace ucssceditor
 
         public override void Save(FileStream input)
         {
-            input.Seek(0,SeekOrigin.Begin);
+            input.Seek(0, SeekOrigin.Begin);
             byte[] file = new byte[input.Length];
             input.Read(file, 0, file.Length);
 
@@ -71,38 +70,38 @@ namespace ucssceditor
             input.Seek(m_vStorageObject.GetStartExportsOffset(), SeekOrigin.Begin);
 
             ushort exportCount = BitConverter.ToUInt16(file, cursor);
-            input.Write(BitConverter.GetBytes((ushort)(exportCount + 1)),0,2);
+            input.Write(BitConverter.GetBytes((ushort)(exportCount + 1)), 0, 2);
             cursor += 2;
 
             input.Seek(exportCount * 2, SeekOrigin.Current);
             cursor += exportCount * 2;
             input.Write(BitConverter.GetBytes(m_vExportId), 0, 2);
 
-            for (int i = 0; i < exportCount;i++)
+            for (int i = 0; i < exportCount; i++)
             {
                 byte nameLength = file[cursor];
                 cursor++;
                 byte[] exportName = new byte[nameLength];
-                Array.Copy(file,cursor,exportName,0,nameLength);
+                Array.Copy(file, cursor, exportName, 0, nameLength);
                 input.WriteByte(nameLength);
-                input.Write(exportName,0,nameLength);
+                input.Write(exportName, 0, nameLength);
                 cursor += nameLength;
             }
 
             input.WriteByte((byte)m_vExportName.Length);
-            input.Write(Encoding.UTF8.GetBytes(m_vExportName),0,(byte)m_vExportName.Length);
+            input.Write(Encoding.UTF8.GetBytes(m_vExportName), 0, (byte)m_vExportName.Length);
 
-            while(cursor<file.Length)
+            while (cursor < file.Length)
             {
                 input.WriteByte(file[cursor]);
                 cursor++;
             }
 
             //refresh all offsets
-            foreach(Texture t in m_vStorageObject.GetTextures())
+            foreach (Texture t in m_vStorageObject.GetTextures())
             {
                 long offset = t.GetOffset();
-                if(offset > 0)
+                if (offset > 0)
                     offset += 2 + 1 + m_vExportName.Length;
                 else
                     offset = offset - 2 - 1 - m_vExportName.Length;
@@ -153,5 +152,6 @@ namespace ucssceditor
         {
             m_vExportName = name;
         }
+        #endregion
     }
 }

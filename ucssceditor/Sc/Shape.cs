@@ -2,38 +2,32 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Diagnostics;
 using System.IO;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using MathNet.Numerics.LinearAlgebra;
 
-namespace ucssceditor
+namespace UCSScEditor
 {
-    class Shape : ScObject
+    public class Shape : ScObject
     {
-        private short m_vShapeId;
-        private int m_vLength;
-        private List<ScObject> m_vChunks;
-        private Decoder m_vStorageObject;
-        private long m_vOffset;
-
-        public Shape(Decoder scs)
+        #region Constructors
+        public Shape(ScFile scs)
         {
-            m_vStorageObject = scs;
-            m_vChunks = new List<ScObject>();
+            _scFile = scs;
+            _chunks = new List<ScObject>();
         }
 
         public Shape(Shape s)
         {
-            m_vStorageObject = s.GetStorageObject();
-            m_vChunks = new List<ScObject>();
-            
+            _scFile = s.GetStorageObject();
+            _chunks = new List<ScObject>();
+
             this.SetOffset(-Math.Abs(s.GetOffset()));
-            
+
             //Duplicate Shape
-            using (FileStream input = new FileStream(m_vStorageObject.GetFileName(), FileMode.Open))
+            using (FileStream input = new FileStream(_scFile.GetFileName(), FileMode.Open))
             {
                 input.Seek(Math.Abs(s.GetOffset()) + 5, SeekOrigin.Begin);
                 using (var br = new BinaryReader(input))
@@ -41,12 +35,24 @@ namespace ucssceditor
                     this.ParseData(br);
                 }
             }
-            foreach(ShapeChunk chunk in this.m_vChunks)
+            foreach (ShapeChunk chunk in this._chunks)
             {
                 chunk.SetOffset(-Math.Abs(chunk.GetOffset()));
             }
         }
+        #endregion
 
+        #region Fields & Properties
+        private short _shapeId;
+        private int _length;
+        private List<ScObject> _chunks;
+        private ScFile _scFile;
+        private long _offset;
+
+        public override List<ScObject> Children => _chunks;
+        #endregion
+
+        #region Methods
         public override int GetDataType()
         {
             return 0;
@@ -62,19 +68,14 @@ namespace ucssceditor
             return "Shape " + GetId().ToString();
         }
 
-        public override List<ScObject> GetChildren()
-        {
-            return m_vChunks;
-        } 
-
         public List<ScObject> GetChunks()
         {
-            return m_vChunks;
+            return _chunks;
         }
 
         public override short GetId()
         {
-            return m_vShapeId;
+            return _shapeId;
         }
 
         public override string GetInfo()
@@ -82,19 +83,19 @@ namespace ucssceditor
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("/!\\ Experimental Rendering");
             sb.AppendLine("");
-            sb.AppendLine("ShapeId: " + m_vShapeId);
-            sb.AppendLine("Polygons: " + m_vChunks.Count);
+            sb.AppendLine("ShapeId: " + _shapeId);
+            sb.AppendLine("Polygons: " + _chunks.Count);
             return sb.ToString();
         }
 
         public long GetOffset()
         {
-            return m_vOffset;
+            return _offset;
         }
 
-        public Decoder GetStorageObject()
+        public ScFile GetStorageObject()
         {
-            return m_vStorageObject;
+            return _scFile;
         }
 
         public override bool IsImage()
@@ -111,25 +112,26 @@ namespace ucssceditor
             Debug.WriteLine(hex.ToString());
             */
 
-            m_vShapeId = br.ReadInt16();//0000
-            br.ReadUInt16();//0100
-            br.ReadUInt16();//0400 if datatype 18
+            _shapeId = br.ReadInt16(); // 0000
+            br.ReadUInt16(); // 0100
+            br.ReadUInt16(); // 0400 if datatype 18
 
-            while(true)
+            while (true)
             {
                 byte chunkType;
                 while (true)
                 {
-                    chunkType = br.ReadByte();//11
-                    m_vLength = br.ReadInt32();//32000000
+                    chunkType = br.ReadByte(); // 11
+                    _length = br.ReadInt32(); // 32000000
                     if (chunkType == 17 || chunkType == 22)
                     {
-                        ShapeChunk chunk = new ShapeChunk(m_vStorageObject);
-                        chunk.SetChunkId((short)m_vChunks.Count);
-                        chunk.SetShapeId(m_vShapeId);
+                        ShapeChunk chunk = new ShapeChunk(_scFile);
+                        chunk.SetChunkId((short)_chunks.Count);
+                        chunk.SetShapeId(_shapeId);
                         chunk.SetChunkType(chunkType);
                         chunk.ParseData(br);
-                        m_vChunks.Add(chunk);
+
+                        _chunks.Add(chunk);
                     }
                     else
                     {
@@ -139,7 +141,7 @@ namespace ucssceditor
                 if (chunkType == 0)
                     break;
                 Debug.WriteLine("Unmanaged chunk type " + chunkType);
-                br.ReadBytes(m_vLength);
+                br.ReadBytes(_length);
             }
         }
 
@@ -166,10 +168,10 @@ namespace ucssceditor
             }
             */
 
-            Debug.WriteLine("Rendering image of " + m_vChunks.Count.ToString() + " polygons");
+            Debug.WriteLine("Rendering image of " + _chunks.Count.ToString() + " polygons");
 
             //Calculate et initialize the final shape size
-            List<PointF> pointsXY = m_vChunks.SelectMany(chunk => ((ShapeChunk)chunk).GetPointsXY()).ToList();
+            List<PointF> pointsXY = _chunks.SelectMany(chunk => ((ShapeChunk)chunk).GetPointsXY()).ToList();
             GraphicsPath pathXY = new GraphicsPath();
             pathXY.AddPolygon(pointsXY.ToArray());
             int width = Rectangle.Round(pathXY.GetBounds()).Width;
@@ -181,14 +183,14 @@ namespace ucssceditor
             var finalShape = new Bitmap(width, height);
 
             //Assemble shape chunks
-            foreach (ShapeChunk chunk in m_vChunks)
+            foreach (ShapeChunk chunk in _chunks)
             {
-                var texture = (Texture)m_vStorageObject.GetTextures()[chunk.GetTextureId()];
-                Bitmap bitmap = texture.GetBitmap();
+                var texture = (Texture)_scFile.GetTextures()[chunk.GetTextureId()];
+                Bitmap bitmap = texture.Bitmap;
 
                 var polygonUV = chunk.GetPointsUV();
                 var polygonXY = chunk.GetPointsXY();
-          
+
                 GraphicsPath gpuv = new GraphicsPath();
                 gpuv.AddPolygon(polygonUV.ToArray());
 
@@ -204,7 +206,7 @@ namespace ucssceditor
                 int chunkX = Rectangle.Round(gpuv.GetBounds()).X;
                 int chunkY = Rectangle.Round(gpuv.GetBounds()).Y;
 
-                    
+
                 //bufferizing shape
                 using (Graphics g = Graphics.FromImage(shapeChunk))
                 {
@@ -213,7 +215,7 @@ namespace ucssceditor
                     g.SetClip(gpuv);
                     g.DrawImage(bitmap, -chunkX, -chunkY);
                 }
-  
+
                 GraphicsPath gp = new GraphicsPath();
                 gp.AddPolygon(new Point[] { new Point(0, 0), new Point(gpuvWidth, 0), new Point(0, gpuvHeight) });
 
@@ -241,27 +243,27 @@ namespace ucssceditor
                     originTransform.Translate(-x, -y);
                     g.Transform = originTransform;
 
-                    g.DrawImage(shapeChunk, gp.PathPoints, gpuv.GetBounds(), System.Drawing.GraphicsUnit.Pixel);
-                    
+                    g.DrawImage(shapeChunk, gp.PathPoints, gpuv.GetBounds(), GraphicsUnit.Pixel);
+
                     if (options.ViewPolygons)
                     {
                         gpuv.Transform(m);
-                        g.DrawPath(new Pen(Color.DarkGray, 1), gpuv);  
-                    }          
+                        g.DrawPath(new Pen(Color.DarkGray, 1), gpuv);
+                    }
                 }
             }
             return finalShape;
         }
 
         public override void Save(FileStream input)
-        { 
-            if (m_vOffset < 0)//new
+        {
+            if (_offset < 0)//new
             {
-                using (FileStream readInput = new FileStream(m_vStorageObject.GetFileName(), FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (FileStream readInput = new FileStream(_scFile.GetFileName(), FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
                     //Positionnement des curseurs
-                    readInput.Seek(Math.Abs(m_vOffset), SeekOrigin.Begin);
-                    input.Seek(m_vStorageObject.GetEofOffset(), SeekOrigin.Begin);
+                    readInput.Seek(Math.Abs(_offset), SeekOrigin.Begin);
+                    input.Seek(_scFile.GetEofOffset(), SeekOrigin.Begin);
 
                     //type and length
                     byte[] dataType = new byte[1];
@@ -273,7 +275,7 @@ namespace ucssceditor
 
                     //shape
                     readInput.Seek(2, SeekOrigin.Current);
-                    input.Write(BitConverter.GetBytes(m_vShapeId),0,2);
+                    input.Write(BitConverter.GetBytes(_shapeId), 0, 2);
 
                     byte[] unknown1 = new byte[2];
                     readInput.Read(unknown1, 0, 2);//0100
@@ -298,7 +300,7 @@ namespace ucssceditor
 
                             if (shapeType == 17)
                             {
-                                m_vChunks[chunkCounter].Save(input);
+                                _chunks[chunkCounter].Save(input);
                                 chunkCounter++;
                                 readInput.Seek(BitConverter.ToInt32(length, 0), SeekOrigin.Current);
                             }
@@ -312,26 +314,27 @@ namespace ucssceditor
                             break;
                         }
                         Debug.WriteLine("Unmanaged shape type " + shapeType);
-                        for(int i=0;i<BitConverter.ToInt32(length,0);i++)
+                        for (int i = 0; i < BitConverter.ToInt32(length, 0); i++)
                         {
                             input.WriteByte((byte)readInput.ReadByte());
                         }
                     }
                 }
-                m_vOffset = m_vStorageObject.GetEofOffset();
-                m_vStorageObject.SetEofOffset(input.Position);
-                input.Write(new byte[] { 0, 0, 0, 0, 0 }, 0, 5);                
+                _offset = _scFile.GetEofOffset();
+                _scFile.SetEofOffset(input.Position);
+                input.Write(new byte[] { 0, 0, 0, 0, 0 }, 0, 5);
             }
         }
-     
+
         public void SetId(short id)
         {
-            m_vShapeId = id;
+            _shapeId = id;
         }
 
         public void SetOffset(long offset)
         {
-            m_vOffset = offset;
+            _offset = offset;
         }
+        #endregion
     }
 }

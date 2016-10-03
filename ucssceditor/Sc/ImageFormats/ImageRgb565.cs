@@ -1,19 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Diagnostics;
 using System.IO;
 using System.Drawing;
 using System.Drawing.Imaging;
 
-namespace ucssceditor
+namespace UCSScEditor
 {
-    class ImageRgb565 : ScImage
+    internal class ImageRgb565 : ScImage
     {
         public ImageRgb565()
         {
+            // Space
         }
 
         public override string GetImageTypeName()
@@ -21,14 +17,14 @@ namespace ucssceditor
             return "RGB565";
         }
 
-        public override void ParseImage(BinaryReader br)
+        public override void ReadImage(BinaryReader br)
         {
-            base.ParseImage(br);
-            m_vBitmap = new Bitmap(m_vWidth, m_vHeight, PixelFormat.Format32bppArgb);
+            base.ReadImage(br);
+            _bitmap = new Bitmap(_width, _height, PixelFormat.Format32bppArgb);
 
-            for (int column = 0; column < m_vHeight; column++)
+            for (int column = 0; column < _height; column++)
             {
-                for (int row = 0; row < m_vWidth; row++)
+                for (int row = 0; row < _width; row++)
                 {
                     ushort color = br.ReadUInt16();
 
@@ -36,7 +32,7 @@ namespace ucssceditor
                     int green = (int)((color >> 5) & 0x3F) << 2;
                     int blue = (int)(color & 0X1F) << 3;
 
-                    m_vBitmap.SetPixel(row, column, Color.FromArgb(red, green, blue));
+                    _bitmap.SetPixel(row, column, Color.FromArgb(red, green, blue));
                 }
             }
         }
@@ -49,13 +45,13 @@ namespace ucssceditor
         public override void WriteImage(FileStream input)
         {
             base.WriteImage(input);
-            for (int column = 0; column < m_vBitmap.Height; column++)
+            for (int column = 0; column < _bitmap.Height; column++)
             {
-                for (int row = 0; row < m_vBitmap.Width; row++)
+                for (int row = 0; row < _bitmap.Width; row++)
                 {
-                    byte red = m_vBitmap.GetPixel(row, column).R;
-                    byte green = m_vBitmap.GetPixel(row, column).G;
-                    byte blue = m_vBitmap.GetPixel(row, column).B;
+                    byte red = _bitmap.GetPixel(row, column).R;
+                    byte green = _bitmap.GetPixel(row, column).G;
+                    byte blue = _bitmap.GetPixel(row, column).B;
 
                     ushort color = (ushort)(((((red >> 3)) & 0x1F) << 11) | ((((green >> 2)) & 0x3F) << 5) | ((blue >> 3) & 0x1F));
 
