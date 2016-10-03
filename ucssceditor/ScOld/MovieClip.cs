@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
-namespace UCSScEditor
+namespace UCSScEditor.ScOld
 {
     public class MovieClip : ScObject
     {
@@ -29,16 +29,16 @@ namespace UCSScEditor
                 input.Seek(Math.Abs(mv.GetOffset()) + 5, SeekOrigin.Begin);
                 using (var br = new BinaryReader(input))
                 {
-                    this.ParseData(br);
+                    this.Read(br);
                 }
             }
 
             //Set new clip id
-            short maxMovieClipId = this.GetId();
+            short maxMovieClipId = this.Id;
             foreach(MovieClip clip in _scFile.GetMovieClips())
             {
-                if (clip.GetId() > maxMovieClipId)
-                    maxMovieClipId = clip.GetId();
+                if (clip.Id > maxMovieClipId)
+                    maxMovieClipId = clip.Id;
             }
             maxMovieClipId++;
             this.SetId(maxMovieClipId);
@@ -47,8 +47,8 @@ namespace UCSScEditor
             short maxShapeId = 20000;//avoid collision with other objects in MovieClips
             foreach(Shape shape in _scFile.GetShapes())
             {
-                if (shape.GetId() > maxShapeId)
-                    maxShapeId = shape.GetId();
+                if (shape.Id > maxShapeId)
+                    maxShapeId = shape.Id;
             }
             maxShapeId++;
 
@@ -75,8 +75,11 @@ namespace UCSScEditor
         private ScFile _scFile;
         private long _offset;
 
+        public override short Id => _clipId;
         public override List<ScObject> Children => _shapes;
+        #endregion
 
+        #region Methods
         public override int GetDataType()
         {
             return 1;
@@ -85,11 +88,6 @@ namespace UCSScEditor
         public override string GetDataTypeName()
         {
             return "MovieClips";
-        }
-
-        public override short GetId()
-        {
-            return _clipId;
         }
 
         public short GetMovieClipDataType()
@@ -112,9 +110,8 @@ namespace UCSScEditor
             return _scFile;
         }
 
-        public override void ParseData(BinaryReader br)
-        {
-            
+        public override void Read(BinaryReader br)
+        {            
             Debug.WriteLine("MovieClip data type: " + _dataType);
             /*StringBuilder hex = new StringBuilder(data.Length * 2);
             foreach (byte b in data)
@@ -144,7 +141,7 @@ namespace UCSScEditor
             for (int i = 0; i < cnt2; i++)
             {
                 sa2[i] = br.ReadInt16();
-                int index = _scFile.GetShapes().FindIndex(shape => shape.GetId() == sa2[i]);
+                int index = _scFile.GetShapes().FindIndex(shape => shape.Id == sa2[i]);
                 if (index != -1)
                     _shapes.Add(_scFile.GetShapes()[index]);
             }
@@ -187,7 +184,7 @@ namespace UCSScEditor
             }
         }
 
-        public override void Save(FileStream input)
+        public override void Write(FileStream input)
         {
             if (_offset < 0)//new
             {
@@ -250,10 +247,10 @@ namespace UCSScEditor
                         byte[] id = new byte[2];
                         readInput.Read(id, 0, 2);
 
-                        int index = _scFile.GetShapes().FindIndex(shape => shape.GetId() == BitConverter.ToInt16(id,0));
+                        int index = _scFile.GetShapes().FindIndex(shape => shape.Id == BitConverter.ToInt16(id,0));
                         if (index != -1)
                         {
-                            input.Write(BitConverter.GetBytes(_shapes[cptShape].GetId()), 0, 2);
+                            input.Write(BitConverter.GetBytes(_shapes[cptShape].Id), 0, 2);
                             cptShape++;
                         }
                         else

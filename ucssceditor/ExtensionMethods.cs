@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Windows.Forms;
+using UCSScEditor.ScOld;
 
 namespace UCSScEditor
 {
@@ -11,7 +12,7 @@ namespace UCSScEditor
             {
                 var dataTypeKey = data.GetDataType().ToString();
                 var dataTypeName = data.GetDataTypeName();
-                var id = data.GetId().ToString();
+                var id = data.Id.ToString();
                 if (!tv.Nodes.ContainsKey(dataTypeKey))
                 {
                     tv.Nodes.Add(dataTypeKey, dataTypeName);
@@ -26,9 +27,9 @@ namespace UCSScEditor
         {
             foreach (var child in sco.Children)
             {
-                tn.Nodes.Add(child.GetId().ToString(), child.GetName());
-                tn.Nodes[child.GetId().ToString()].Tag = child;
-                PopulateChildren(tn.Nodes[child.GetId().ToString()], child);
+                tn.Nodes.Add(child.Id.ToString(), child.GetName());
+                tn.Nodes[child.Id.ToString()].Tag = child;
+                PopulateChildren(tn.Nodes[child.Id.ToString()], child);
             }
         }
     }

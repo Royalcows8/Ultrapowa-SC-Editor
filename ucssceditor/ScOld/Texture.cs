@@ -5,7 +5,7 @@ using System.Text;
 using System.IO;
 using System.Drawing;
 
-namespace UCSScEditor
+namespace UCSScEditor.ScOld
 {
     public class Texture : ScObject
     {
@@ -53,15 +53,12 @@ namespace UCSScEditor
         private ScFile _scFile;
         private ScImage _image;
         private long _offset;
+
+        public override Bitmap Bitmap => _image.GetBitmap();
         #endregion
 
         #region Methods
-        public override Bitmap Bitmap => _image.GetBitmap();
-
-        public override short GetId()
-        {
-            return _textureId;
-        }
+        public override short Id => _textureId;
 
         public override int GetDataType()
         {
@@ -114,7 +111,7 @@ namespace UCSScEditor
             return true;
         }
 
-        public override void ParseData(BinaryReader br)
+        public override void Read(BinaryReader br)
         {
             _imageType = br.ReadByte();
 
@@ -123,7 +120,19 @@ namespace UCSScEditor
             else
                 _image = new ScImage();
 
-            _image.ReadImage(br);
+            _image.ReadImage(br, null);
+        }
+
+        public void ReadW(BinaryReader br, BinaryReader texbr)
+        {
+            _imageType = br.ReadByte();
+
+            if (s_imageTypes.ContainsKey(_imageType))
+                _image = (ScImage)Activator.CreateInstance(s_imageTypes[_imageType]);
+            else
+                _image = new ScImage();
+
+            _image.ReadImage(br, texbr);
         }
 
         public override Bitmap Render(RenderingOptions options)
@@ -131,7 +140,7 @@ namespace UCSScEditor
             return Bitmap;
         }
 
-        public override void Save(FileStream input)
+        public override void Write(FileStream input)
         {
             if (_offset < 0) // New
             {

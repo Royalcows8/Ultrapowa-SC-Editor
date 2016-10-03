@@ -1,4 +1,4 @@
-﻿namespace UCSScEditor
+﻿namespace UCSScEditor.ScOld
 {
     class MovieClipFrame
     {

@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Drawing;
+using System;
 
-namespace UCSScEditor
+namespace UCSScEditor.ScOld
 {
     public class ScObject
     {
@@ -14,6 +15,8 @@ namespace UCSScEditor
         #endregion
 
         #region Fields & Properties
+        public virtual short Id { get; protected set; }
+
         public virtual Bitmap Bitmap => null;
 
         public virtual List<ScObject> Children => new List<ScObject>();
@@ -30,11 +33,6 @@ namespace UCSScEditor
             return null;
         }
 
-        public virtual short GetId()
-        {
-            return -1;
-        }
-
         public virtual string GetInfo()
         {
             return string.Empty;
@@ -42,7 +40,7 @@ namespace UCSScEditor
 
         public virtual string GetName()
         {
-            return GetId().ToString();
+            return Id.ToString();
         }
 
         public virtual bool IsImage()
@@ -52,12 +50,12 @@ namespace UCSScEditor
 
         public virtual Bitmap Render(RenderingOptions options) => null;
 
-        public virtual void ParseData(BinaryReader br)
+        public virtual void Read(BinaryReader br)
         {
             // Space
         }
 
-        public virtual void Save(FileStream input)
+        public virtual void Write(FileStream input)
         {
             // Space
         }

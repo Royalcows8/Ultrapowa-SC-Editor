@@ -78,19 +78,25 @@
       <DependentUpon>CloneExport.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Sc\ImageFormats\ImageRgba4444.cs" />
-    <Compile Include="Sc\ImageFormats\ImageRgb565.cs" />
-    <Compile Include="ScFile.cs" />
+    <Compile Include="ScOld\ImageFormats\ImageRgba4444.cs" />
+    <Compile Include="ScOld\ImageFormats\ImageRgb565.cs" />
+    <Compile Include="ScOld\ScFile.cs" />
+    <Compile Include="ScOld\Export.cs" />
+    <Compile Include="ScOld\MovieClipFrame.cs" />
+    <Compile Include="ScOld\MovieClip.cs" />
+    <Compile Include="ScOld\ImageFormats\ScImage.cs" />
+    <Compile Include="ScOld\RenderingOptions.cs" />
+    <Compile Include="ScOld\ScObject.cs" />
+    <Compile Include="ScOld\ImageFormats\ImageRgba8888.cs" />
+    <Compile Include="ScOld\ShapeChunk.cs" />
+    <Compile Include="ScOld\Shape.cs" />
+    <Compile Include="ScOld\Texture.cs" />
     <Compile Include="Sc\Export.cs" />
-    <Compile Include="Sc\MovieClipFrame.cs" />
-    <Compile Include="Sc\MovieClip.cs" />
-    <Compile Include="Sc\ImageFormats\ScImage.cs" />
-    <Compile Include="Sc\RenderingOptions.cs" />
-    <Compile Include="Sc\ScObject.cs" />
-    <Compile Include="Sc\ImageFormats\ImageRgba8888.cs" />
-    <Compile Include="Sc\ShapeChunk.cs" />
-    <Compile Include="Sc\Shape.cs" />
-    <Compile Include="Sc\Texture.cs" />
+    <Compile Include="Sc\Loaders\ScLoader7.cs" />
+    <Compile Include="Sc\ScFile.cs" />
+    <Compile Include="Sc\ScFormatVersion.cs" />
+    <Compile Include="Sc\ScLoader.cs" />
+    <Compile Include="Sc\ScData.cs" />
     <EmbeddedResource Include="Prompts\ReplaceTexture.resx">
       <DependentUpon>ReplaceTexture.cs</DependentUpon>
     </EmbeddedResource>

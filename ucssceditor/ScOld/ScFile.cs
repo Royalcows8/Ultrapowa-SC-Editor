@@ -4,21 +4,11 @@ using System.Text;
 using System.IO;
 using System.Diagnostics;
 
-namespace UCSScEditor
+namespace UCSScEditor.ScOld
 {
     public class ScFile
     {
-        public ushort _exportCount;
-        private List<ScObject> _textures;
-        private List<ScObject> _shapes;
-        private List<ScObject> _exports;
-        private List<ScObject> _movieClips;
-        private List<ScObject> _pendingChanges;
-
-        private string _fileName;
-        private long _eofOffset;
-        private long _exportStartOffset;
-
+        #region Constructors
         public ScFile(string fileName)
         {
             _textures = new List<ScObject>();
@@ -28,6 +18,20 @@ namespace UCSScEditor
             _pendingChanges = new List<ScObject>();
             _fileName = fileName;
         }
+        #endregion
+
+        #region Fields & Properties
+        private ushort _exportCount;
+        private readonly List<ScObject> _textures;
+        private readonly List<ScObject> _shapes;
+        private readonly List<ScObject> _exports;
+        private readonly List<ScObject> _movieClips;
+        private readonly List<ScObject> _pendingChanges;
+
+        private readonly string _fileName;
+        private long _eofOffset;
+        private long _exportStartOffset;
+        #endregion
 
         public void AddChange(ScObject change)
         {
@@ -109,7 +113,7 @@ namespace UCSScEditor
                 if (data.GetDataType() == 7)
                     exports.Add(data);
                 else
-                    data.Save(input);
+                    data.Write(input);
             }
             _pendingChanges.Clear();
 
@@ -117,7 +121,7 @@ namespace UCSScEditor
             {
                 foreach (ScObject data in exports)
                 {
-                    data.Save(input);
+                    data.Write(input);
                 }
             }
 
@@ -130,14 +134,15 @@ namespace UCSScEditor
 
         public void Load()
         {
-            using (var br = new BinaryReader(File.Open(_fileName, FileMode.Open)))
+            using (var texReader = new BinaryReader(File.OpenRead(_fileName.Replace(".sc", "_tex.sc"))))
+            using (var reader = new BinaryReader(File.OpenRead(_fileName)))
             {
-                var shapeCount = br.ReadUInt16(); // a1 + 8
-                var movieClipCount = br.ReadUInt16(); // a1 + 12
-                var textureCount = br.ReadUInt16(); // a1 + 16
-                var textFieldCount = br.ReadUInt16(); // a1 + 24
-                var matrixCount = br.ReadUInt16(); // a1 + 28
-                var colorTransformCount = br.ReadUInt16(); // a1 + 32
+                var shapeCount = reader.ReadUInt16(); // a1 + 8
+                var movieClipCount = reader.ReadUInt16(); // a1 + 12
+                var textureCount = reader.ReadUInt16(); // a1 + 16
+                var textFieldCount = reader.ReadUInt16(); // a1 + 24
+                var matrixCount = reader.ReadUInt16(); // a1 + 28
+                var colorTransformCount = reader.ReadUInt16(); // a1 + 32
 
                 Debug.WriteLine("ShapeCount: " + shapeCount);
                 Debug.WriteLine("MovieClipCount: " + movieClipCount);
@@ -147,55 +152,55 @@ namespace UCSScEditor
                 Debug.WriteLine("ColorTransformCount: " + colorTransformCount);
 
                 // 5 useless bytes, not even used by Supercell
-                br.ReadByte(); // 1 octet
-                br.ReadUInt16(); // 2 octets
-                br.ReadUInt16(); // 2 octets
+                reader.ReadByte(); // 1 octet
+                reader.ReadUInt16(); // 2 octets
+                reader.ReadUInt16(); // 2 octets
 
-                _exportStartOffset = br.BaseStream.Position;
-                _exportCount = br.ReadUInt16(); // a1 + 20
+                _exportStartOffset = reader.BaseStream.Position;
+                _exportCount = reader.ReadUInt16(); // a1 + 20
                 Debug.WriteLine("ExportCount: " + _exportCount);
 
                 // Reads the Export IDs.
                 for (int i = 0; i < _exportCount; i++)
                 {
                     var export = new Export(this);
-                    export.SetId(br.ReadInt16());
+                    export.SetId(reader.ReadInt16());
                     _exports.Add(export);
                 }
 
                 // Reads the Export names.
                 for (int i = 0; i < _exportCount; i++)
                 {
-                    var nameLength = br.ReadByte();
-                    var name = Encoding.UTF8.GetString(br.ReadBytes(nameLength));
+                    var nameLength = reader.ReadByte();
+                    var name = Encoding.UTF8.GetString(reader.ReadBytes(nameLength));
                     var export = (Export)_exports[i];
                     export.SetExportName(name);
                 }
 
                 do
                 {
-                    long offset = br.BaseStream.Position;
-                    byte dataType = br.ReadByte();
-                    int dataLength = br.ReadInt32();
+                    long offset = reader.BaseStream.Position;
+                    byte dataType = reader.ReadByte();
+                    int dataLength = reader.ReadInt32();
                     switch (dataType)
                     {
                         case 0:
                             _eofOffset = offset;
                             for (int i = 0; i < _exports.Count; i++)
                             {
-                                int index = _movieClips.FindIndex(movie => movie.GetId() == _exports[i].GetId());
+                                int index = _movieClips.FindIndex(movie => movie.Id == _exports[i].Id);
                                 if (index != -1)
                                     ((Export)_exports[i]).SetDataObject((MovieClip)_movieClips[index]);
                             }
                             return;
-                        
+
                         // Textures
                         case 1:
                         case 16:
                         case 19:
                             var texture = new Texture(this);
                             texture.SetOffset(offset);
-                            texture.ParseData(br);
+                            texture.ReadW(reader, texReader);
 
                             _textures.Add(texture);
                             continue;
@@ -205,7 +210,7 @@ namespace UCSScEditor
                         case 18:
                             var shape = new Shape(this);
                             shape.SetOffset(offset);
-                            shape.ParseData(br);
+                            shape.Read(reader);
                             _shapes.Add(shape);
                             continue;
 
@@ -216,7 +221,7 @@ namespace UCSScEditor
                         case 14:
                             var movieClip = new MovieClip(this, dataType);
                             movieClip.SetOffset(offset);
-                            movieClip.ParseData(br);
+                            movieClip.Read(reader);
                             _movieClips.Add(movieClip);
                             continue;
 
@@ -241,7 +246,7 @@ namespace UCSScEditor
 
                     // Just not to break the stream.
                     if (dataLength > 0)
-                        br.ReadBytes(dataLength);
+                        reader.ReadBytes(dataLength);
                 }
                 while (true);
             }

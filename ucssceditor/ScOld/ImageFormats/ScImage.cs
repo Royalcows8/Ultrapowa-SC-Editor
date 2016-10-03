@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Drawing;
 
-namespace UCSScEditor
+namespace UCSScEditor.ScOld
 {
     internal class ScImage
     {
@@ -45,7 +45,7 @@ namespace UCSScEditor
         #endregion
 
         #region Methods
-        public virtual void ReadImage(BinaryReader br)
+        public virtual void ReadImage(BinaryReader br, BinaryReader texbr)
         {
             _width = br.ReadUInt16();
             _height = br.ReadUInt16();

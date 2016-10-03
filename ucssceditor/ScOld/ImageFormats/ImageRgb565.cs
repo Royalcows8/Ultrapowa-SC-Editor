@@ -3,7 +3,7 @@ using System.IO;
 using System.Drawing;
 using System.Drawing.Imaging;
 
-namespace UCSScEditor
+namespace UCSScEditor.ScOld
 {
     internal class ImageRgb565 : ScImage
     {
@@ -17,9 +17,10 @@ namespace UCSScEditor
             return "RGB565";
         }
 
-        public override void ReadImage(BinaryReader br)
+        public override void ReadImage(BinaryReader br, BinaryReader texbr)
         {
-            base.ReadImage(br);
+            base.ReadImage(br, texbr);
+
             _bitmap = new Bitmap(_width, _height, PixelFormat.Format32bppArgb);
 
             for (int column = 0; column < _height; column++)

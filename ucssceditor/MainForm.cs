@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using System.IO;
+using UCSScEditor.ScOld;
 
 namespace UCSScEditor
 {
@@ -58,34 +59,34 @@ namespace UCSScEditor
 
         public void RefreshMenu()
         {
-            textureToolStripMenuItem.Visible = false;
-            shapeToolStripMenuItem.Visible = false;
-            objectToolStripMenuItem.Visible = false;
-            chunkToolStripMenuItem.Visible = false;
-            if(treeView1.SelectedNode != null)
-            {
-                if (treeView1.SelectedNode.Tag != null)
-                {
-                    ScObject data = (ScObject)treeView1.SelectedNode.Tag;
-                    switch(data.GetDataType())
-                    {
-                        case 99:
-                            chunkToolStripMenuItem.Visible = true;
-                            break;
-                        case 0:
-                            shapeToolStripMenuItem.Visible = true;
-                            break;
-                        case 2:
-                            textureToolStripMenuItem.Visible = true;
-                            break;
-                        case 7:
-                            objectToolStripMenuItem.Visible = true;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
+            //textureToolStripMenuItem.Visible = false;
+            //shapeToolStripMenuItem.Visible = false;
+            //objectToolStripMenuItem.Visible = false;
+            //chunkToolStripMenuItem.Visible = false;
+            //if(treeView1.SelectedNode != null)
+            //{
+            //    if (treeView1.SelectedNode.Tag != null)
+            //    {
+            //        ScObject data = (ScObject)treeView1.SelectedNode.Tag;
+            //        switch(data.GetDataType())
+            //        {
+            //            case 99:
+            //                chunkToolStripMenuItem.Visible = true;
+            //                break;
+            //            case 0:
+            //                shapeToolStripMenuItem.Visible = true;
+            //                break;
+            //            case 2:
+            //                textureToolStripMenuItem.Visible = true;
+            //                break;
+            //            case 7:
+            //                objectToolStripMenuItem.Visible = true;
+            //                break;
+            //            default:
+            //                break;
+            //        }
+            //    }
+            //}
         }
         
         // Creates a new instance of the Decoder object and loads the decompressed SC files.
@@ -93,6 +94,8 @@ namespace UCSScEditor
         {
             _scFile = new ScFile(fileName);
             _scFile.Load();
+
+            //var scfile = ScFile.Load(fileName, ScFormatVersion.Version7);
 
             treeView1.Nodes.Clear();
 
@@ -122,7 +125,7 @@ namespace UCSScEditor
                     pictureBox1.Refresh();
                     label1.Text = data.GetInfo();
                 }
-            }   
+            }
         }
 
         public void Export()
@@ -216,7 +219,7 @@ namespace UCSScEditor
             foreach (Texture texture in _scFile.GetTextures())
                 textureIds.Add(texture.GetTextureId());
             ((ComboBox)form.Controls["comboBox1"]).DataSource = textureIds;
-            if(form.ShowDialog() == DialogResult.OK)
+            if (form.ShowDialog() == DialogResult.OK)
             {
                 if (treeView1.SelectedNode != null)
                 {
@@ -244,13 +247,13 @@ namespace UCSScEditor
                     if (form.ShowDialog() == DialogResult.OK)
                     {
                         string result = ((TextBox)form.Controls["textBox1"]).Text;
-                        if(result != "" && _scFile.GetExports().FindIndex(exp => exp.GetName() == result) == -1 )
+                        if (result != "" && _scFile.GetExports().FindIndex(exp => exp.GetName() == result) == -1)
                         {
                             MovieClip mv = new MovieClip((MovieClip)data.GetDataObject());
                             _scFile.AddMovieClip(mv);
                             _scFile.AddChange(mv);
                             Export ex = new Export(_scFile);
-                            ex.SetId(mv.GetId());
+                            ex.SetId(mv.Id);
                             ex.SetExportName(result);
                             ex.SetDataObject(mv);
                             _scFile.AddExport(ex);

@@ -6,7 +6,7 @@ using System.IO;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 
-namespace UCSScEditor
+namespace UCSScEditor.ScOld
 {
     public class ShapeChunk : ScObject
     {
@@ -49,7 +49,7 @@ namespace UCSScEditor
 
         public override string GetName()
         {
-            return "Chunk " + GetId().ToString();
+            return "Chunk " + Id.ToString();
         }
 
         public List<PointF> GetPointsUV()
@@ -62,10 +62,7 @@ namespace UCSScEditor
             return _pointsXY;
         }
 
-        public override short GetId()
-        {
-            return _chunkId;
-        }
+        public override short Id => _chunkId;
 
         public override string GetInfo()
         {
@@ -96,7 +93,7 @@ namespace UCSScEditor
             return true;
         }
 
-        public override void ParseData(BinaryReader br)
+        public override void Read(BinaryReader br)
         {
             Debug.WriteLine("Parsing chunk data from shape " + _shapeId);
 
@@ -141,7 +138,7 @@ namespace UCSScEditor
         public override Bitmap Render(RenderingOptions options)
         {
             Debug.WriteLine("Rendering chunk from shape " + _shapeId);
-            
+
             Bitmap result = null;
 
             var texture = (Texture)_scFile.GetTextures()[_textureId];
@@ -215,7 +212,7 @@ namespace UCSScEditor
             }
         }
 
-        public override void Save(FileStream input)
+        public override void Write(FileStream input)
         {
             if (_offset < 0)
             {
